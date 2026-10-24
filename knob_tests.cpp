@@ -1,0 +1,6 @@
+#include "sample.h"
+#include <vector>
+#include <cmath>
+#include <iostream>
+using namespace whic;
+int wmain(int argc,wchar_t**argv){if(argc!=2)return 2;Sample s;s.path=argv[1];std::wstring e;if(!probeSample(s,e)||!prepareForPlayback(s,e))return 3;Decoder d;if(!d.open(s,e))return 4;std::vector<float> original(96000);auto n=d.read(original.data(),48000);original.resize(n*2);DspParameters base;base.blend=1;base.resonance=.7f;auto render=[&](DspParameters p){SampleDsp f;f.setParameters(p);auto v=original;f.process(v.data(),n);return v;};auto reference=render(base);const char* names[]={"Hardness","Strike Window","Resonance","Detune","Stiffness","Decay","Sympathetic"};for(int i=0;i<7;++i){auto p=base;switch(i){case 0:p.hardness=0;break;case 1:p.strikeWindowMs=200;break;case 2:p.resonance=0;break;case 3:p.detuneCents=40;break;case 4:p.stiffness=.9f;break;case 5:p.decaySeconds=.05f;break;case 6:p.sympathetic=1;break;}auto v=render(p);double diff=0;for(size_t j=0;j<v.size();++j){if(!std::isfinite(v[j]))return 5;diff+=std::abs(v[j]-reference[j]);}std::cout<<names[i]<<" sample-driven difference="<<diff<<"\n";if(diff<1e-7)return 6;}std::cout<<"PASS seven physics controls individually affect recorded audio; release gain is covered separately by engine release test.\n";return 0;}

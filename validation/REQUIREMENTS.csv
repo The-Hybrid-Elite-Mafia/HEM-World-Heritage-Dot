@@ -1,0 +1,25 @@
+Requirement,Code evidence,Validation or limitation
+C++23 custom Direct2D DirectWrite,workstation.cpp single top-level CreateWindowEx no child controls,LLVM C++23 and MSVC19.29 latest/AVX2 builds passed; actual production offscreen render inspected; modern MSVC C++23 hosted build pending authorized repository access
+Eight controls,parameter() maps eight named controls to DspParameters; audio.cpp transports them,Seven individual DSP differences passed; recorded release routing passed
+Blend and bypass,dsp.cpp current blend and physicsOn,Dry default and bypass bit exact; wet finite and different
+Real sample excitation,dsp.cpp no independent noise or oscillator,Zero source equals zero output
+Recorded release,audio.cpp filters releaseTrigger; noteOff calls begin release; gain physics[6],Routing fixture passed; audited402factory presets have zero dedicated recorded-release zones
+Keyzone editor,workstation.cpp right-click six mapping fields and release flag,Production action handlers tested directly without HWND; live UI untested
+88 key piano,workstation.cpp MIDI21..108 and black keys; mouse/PC/MIDI input,Source audited only; no live MIDI or audio
+Telemetry,audio.cpp telemetry and workstation.cpp GetProcessTimes,Stopped unavailable passed; visible label explicitly DECODED MiB/s
+Auto mapping,auto_mapper.h filename roots velocity anchors RR and midpoint zones,Examples passed; unknown roots default60 need review
+Import and persistence,sample.cpp probe/preparation/save/load v1-v6,Real WAV decode and v5 roundtrip passed; no new FLAC/AIFF regression in this turn
+Source/license,No checkbox in workstation.cpp; setSamples ignores legacy attestation,Empty metadata and false attestation render passed
+Silent audio selection,audio_preferences.h and explicit connect(),Save/load invalid config passed; no device initialized
+Mmap/SPSC,mmap_streamer.cpp two PCM pages; audio.cpp resident ring atomics,Existing implementation inspected; new hardware/residency untested
+Factory library,Existing v0.3.3 library preserved; candidate expects adjacent library,Not bundled into small candidate ZIP; backup references supplied
+Offscreen render,offscreen_render.cpp includes production workstation.cpp draw(),Three output sizes passed;1366 and2560 inspected; no window or mockup
+MSVC toolchain,VS2019 cl19.29 x64 latest AVX2,App build and19offline checks passed; C++23-capable MSVC not installed
+Portable saved instruments,portable_pack.h called asynchronously by production Save action,Relocation SHA256 dedup original-preservation metadata release and failed-export tests passed
+Factory release coverage,402v4presets audited,Zero dedicated release zones; NO RELEASE MAPPED; no fabricated recordings
+Modern toolchain discovery,vswhere all products including prerelease and registry metadata,Only VS2019 registered; modern C++23-capable MSVC prerequisite remains
+
+Manual hosted build,.github/workflows/manual-msvc.yml and build-cloud.ps1,Exact new repo guard; workflow_dispatch only; syntax passed; six existing offline test programs passed with CI acoustic fixture; hosted run not performed
+
+Full factory regression,library_test.cpp loads actual402presets and individually renders every zone twice,Full source decode plus saved and newphysics individual renders and actual wholepack RR coverage passed
+Legacy preset migration,Original v033 postmix DSP retained via persisted legacyMode in v6,Four v3cases byteexact against separately compiled original engine and byteexact after v6 reload

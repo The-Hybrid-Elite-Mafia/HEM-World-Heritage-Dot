@@ -1,0 +1,20 @@
+{
+  "presets_passed": 402,
+  "presets_failed": 0,
+  "zone_instances": 6318,
+  "individual_zone_renders": 12636,
+  "modes": [
+    "saved legacy processing",
+    "100 percent new sample-excited physics"
+  ],
+  "rr_zone_instances_covered": 6318,
+  "rr_note_triggers": 6318,
+  "unique_sources_fully_decoded": 6318,
+  "decoded_source_frames": 1520278936,
+  "individual_render_frames": 96000,
+  "rate": 48000,
+  "v3_migration_cases_bit_exact_to_separately_compiled_v033": 4,
+  "v6_reload_cases_bit_exact": 4,
+  "audio_device_calls": 0,
+  "factory_recorded_release_zones": 0
+}

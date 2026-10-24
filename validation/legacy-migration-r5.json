@@ -1,0 +1,50 @@
+{
+  "old_engine": "Unchanged release-v033-20261024 source, freshly compiled",
+  "new_engine": "v040 r5 original legacy postmix DSP retained",
+  "frames_per_case": 48000,
+  "rate": 48000,
+  "overlapping_notes": true,
+  "cases": [
+    {
+      "case": 0,
+      "hashes": {
+        "old": "18577b86418e4cf0ef5a549e555f7cd1a1843091052cf9850fb066da3ec73abd",
+        "new": "18577b86418e4cf0ef5a549e555f7cd1a1843091052cf9850fb066da3ec73abd",
+        "roundtrip": "18577b86418e4cf0ef5a549e555f7cd1a1843091052cf9850fb066da3ec73abd"
+      },
+      "bit_exact_v033": true,
+      "bit_exact_v6_reload": true
+    },
+    {
+      "case": 1,
+      "hashes": {
+        "old": "3caed4799b147e0c42b503f21eb13ebe2160bb546cd176bc94a24565ed09b00f",
+        "new": "3caed4799b147e0c42b503f21eb13ebe2160bb546cd176bc94a24565ed09b00f",
+        "roundtrip": "3caed4799b147e0c42b503f21eb13ebe2160bb546cd176bc94a24565ed09b00f"
+      },
+      "bit_exact_v033": true,
+      "bit_exact_v6_reload": true
+    },
+    {
+      "case": 2,
+      "hashes": {
+        "old": "2418a2c499af35c721d96d923869d1efd74b3627f2292ec17b92a86f386f483a",
+        "new": "2418a2c499af35c721d96d923869d1efd74b3627f2292ec17b92a86f386f483a",
+        "roundtrip": "2418a2c499af35c721d96d923869d1efd74b3627f2292ec17b92a86f386f483a"
+      },
+      "bit_exact_v033": true,
+      "bit_exact_v6_reload": true
+    },
+    {
+      "case": 3,
+      "hashes": {
+        "old": "988b8004c9ae8e236e629dac8eb5d1ac7d65bf1aca185617373e2bd553179cf0",
+        "new": "988b8004c9ae8e236e629dac8eb5d1ac7d65bf1aca185617373e2bd553179cf0",
+        "roundtrip": "988b8004c9ae8e236e629dac8eb5d1ac7d65bf1aca185617373e2bd553179cf0"
+      },
+      "bit_exact_v033": true,
+      "bit_exact_v6_reload": true
+    }
+  ],
+  "audio_streams": 0
+}

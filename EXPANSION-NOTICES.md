@@ -1,0 +1,10 @@
+# Expansion source notices
+
+## Sources and licenses
+
+- Six-string guitar-banjo: SX acoustic six-string guitar-banjo, recorded/edited/mapped by itsclipping; Ganjo v1.000, CC0 1.0. This is not presented as five-string bluegrass banjo. Source numeric SFZ mapping is retained (MIDI 38-72), including irregular round-robin counts. See library/Ganjo/source/ganjo/LICENSE.md and README.md.
+- Steel-string acoustic guitar: Gary Campion / FlameStudios Seagull recordings, adapted by Roberto for FreePats, release 2020-05-21. GPL version 3 or later with the original FreePats music-composition exception. Preserve readme.txt, gpl.txt, original WAV/SFZ source and generated mapping/source scripts when distributing the bank. The exception says these sounds alone do not require a mixed composition to be GPL; it does not remove other reasons GPL might apply. We retain the exception and do not relicense the samples as CC0. Original audio bytes are unchanged by this expansion. Numeric pitch and velocity splits are preserved (MIDI 39-85).
+- Tabla: Subodh Deolekar, Tabla strokes dataset (2020), DOI 10.5281/zenodo.4327350, https://zenodo.org/records/4327350, CC BY 4.0 https://creativecommons.org/licenses/by/4.0/. The provider describes professional tabla-player recordings tuned C#. Retain the attribution, source DOI, license and modification notice when redistributing/adapting recordings. New mapping assigns 13 filename stroke labels to pads at original playback speed with deterministic take cycling; pad numbers are not claims of chromatic pitches or measured fundamentals. All 650 WAVs passed provider checksum, full decoding, individual-zone rendering, mapping and silent UI checks.
+
+The application and validation code are GPLv3. The baseline samples remain CC0; the expanded library is intentionally mixed-license. Do not use the baseline's CC0-only coverage summary to describe every expansion asset. Per-pack attribution and original licenses govern each pack. Generated .whic files are editable mappings; the converter and original SFZ/metadata are included, with changes documented per pack.
+

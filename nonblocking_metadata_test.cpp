@@ -1,0 +1,4 @@
+#include "audio.h"
+#include <cmath>
+#include <iostream>
+int wmain(int argc,wchar_t**argv){if(argc!=2)return 2;whic::Sample s;s.path=argv[1];s.map={60,60,60,1,127,0};std::wstring error;if(!whic::probeSample(s,error)||!whic::prepareForPlayback(s,error)){std::wcerr<<error;return 3;}whic::OfflineRender r;if(!whic::AudioEngine::renderOffline({s},L"",false,{{0,60,100},{4000,60,0}},44100,22050,r,error)){std::wcerr<<error;return 4;}double peak=0;for(float x:r.stereo){if(!std::isfinite(x))return 5;peak=std::max(peak,std::abs(double(x)));}if(peak<=1e-9)return 6;s.map.velLow=0;whic::AudioEngine engine;if(engine.setSamples({s},error,L"",false))return 7;std::wcout<<L"PASS nonblocking empty provenance and false legacy attestation; finite nonzero real-sample offline render; invalid mapping still rejected. No audio stream.\n";return 0;}

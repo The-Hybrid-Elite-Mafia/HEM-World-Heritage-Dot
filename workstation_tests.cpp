@@ -1,0 +1,19 @@
+#include "audio.h"
+#include "auto_mapper.h"
+#include <filesystem>
+#include <iostream>
+#include <cmath>
+#include <limits>
+#include <stdexcept>
+using namespace whic;
+void check(bool b,const char* s){if(!b)throw std::runtime_error(s);std::cout<<"PASS "<<s<<"\n";}
+double energy(const std::vector<float>&v){double e=0;for(float f:v){if(!std::isfinite(f))throw std::runtime_error("nonfinite");e+=double(f)*f;}return e;}
+int wmain(int argc,wchar_t**argv){try{if(argc!=3)return 2;Sample s;s.path=argv[1];s.map={60,60,60,1,127,0};std::wstring err;check(probeSample(s,err)&&prepareForPlayback(s,err),"real recording decoded");Decoder decoder;check(decoder.open(s,err),"decoder opened without audio");std::vector<float> pcm(48000*2);auto n=decoder.read(pcm.data(),48000);pcm.resize(n*2);check(energy(pcm)>0,"recording finite nonzero");
+DspParameters wet;wet.blend=1;wet.resonance=1;auto dry=pcm;SampleDsp bypass;bypass.setParameters({});bypass.process(dry.data(),n);check(dry==pcm,"default pure recording bit exact");auto shaped=pcm;SampleDsp model;model.setParameters(wet);model.process(shaped.data(),n);check(energy(shaped)>0&&shaped!=pcm,"sample-excited physics finite nonzero and distinct");
+std::vector<float> zero(96000);SampleDsp empty;empty.setParameters(wet);empty.process(zero.data(),48000);check(energy(zero)==0,"physics cannot sound without sample excitation");
+for(int extreme=0;extreme<2;++extreme){DspParameters p=wet;p.hardness=extreme;p.strikeWindowMs=extreme?250:1;p.detuneCents=extreme?50:-50;p.stiffness=extreme;p.decaySeconds=extreme?12:.05f;p.sympathetic=extreme;SampleDsp dsp;dsp.setParameters(p);auto v=pcm;dsp.process(v.data(),n);check(std::isfinite(energy(v)),"extreme parameter render finite");}
+wet.physicsOn=false;SampleDsp off;off.setParameters(wet);dry=pcm;off.process(dry.data(),n);check(dry==pcm,"physics bypass bit exact");
+std::vector<Sample> maps(3);maps[0].path=L"Cello_Sustain_C3_v100_rr2.wav";maps[1].path=L"Cello_Sustain_C3_v40_rr1.wav";maps[2].path=L"Piano_A4_vel127.wav";autoMapSamples(maps);check(maps[0].map.root==48&&maps[0].map.rr==2&&maps[2].map.root==69,"filename note roots and round robins");check(maps[1].map.velHigh==70&&maps[0].map.velLow==71&&maps[0].map.high+1==maps[2].map.low,"velocity and key zones contiguous");
+AudioEngine engine;auto t=engine.telemetry();check(!t.running&&t.rate==0&&t.bufferFrames==0&&t.left==0&&t.right==0,"startup stopped telemetry unavailable");OfflineRender rendered;check(AudioEngine::renderOffline({s},L"",false,{{0,60,100},{4000,60,0}},48000,24000,rendered,err)&&energy(rendered.stereo)>0,"no provenance playback gate offline");check(!rendered.decodeErrors,"offline no decode errors");
+auto path=std::filesystem::path(argv[2])/L"roundtrip.whic";s.releaseTrigger=true;wet.physicsOn=true;wet.detuneCents=12;wet.strikeWindowMs=66;check(savePreset(path.wstring(),{s},L"test metadata",err,wet),"v5 preset saved");std::vector<Sample> loaded;DspParameters p;std::wstring metadata;check(loadPreset(path.wstring(),loaded,metadata,err,&p)&&loaded.size()==1&&loaded[0].releaseTrigger&&p.detuneCents==12&&p.strikeWindowMs==66&&metadata==L"test metadata","v5 mappings physics metadata roundtrip");
+check(AudioEngine::renderOffline({s},L"",false,{{0,60,100}},48000,24000,rendered,err)&&energy(rendered.stereo)==0,"release-only mapping does not trigger on key down");check(AudioEngine::renderOffline({s},L"",false,{{0,60,100},{2000,60,0}},48000,24000,rendered,err)&&energy(rendered.stereo)>0,"recorded-file release trigger at note off (routing fixture only)");DspParameters muted;muted.releaseNoise=0;check(AudioEngine::renderOffline({s},L"",false,{{0,60,100},{2000,60,0}},48000,24000,rendered,err,muted)&&energy(rendered.stereo)==0,"Release Noise zero suppresses recorded release");std::cout<<"All offline checks passed. No device/stream opened. Release fixture tests routing, not acoustic release provenance.\n";return 0;}catch(const std::exception&e){std::cerr<<"FAIL "<<e.what()<<"\n";return 1;}}

@@ -1,0 +1,9 @@
+{
+  "presets": 402,
+  "versions": {
+    "4": 402
+  },
+  "explicit_recorded_release_zones": 0,
+  "filename_candidates_not_verified_release_provenance": [],
+  "interpretation": "Legacy releaseSeconds is amplitude envelope only, not a recorded release. No recording fabricated or reclassified."
+}
