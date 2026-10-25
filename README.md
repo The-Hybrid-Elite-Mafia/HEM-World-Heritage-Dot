@@ -1,3 +1,7 @@
+# 0.4.1 repair candidate
+
+See [repair notes and validation scope](REPAIRS-0.4.1.md). The installed previous version is preserved pending review.
+
 # World Heritage Workstation 0.4.0 — engineering candidate
 
 This is an isolated, compiled candidate, not an installed or user-approved replacement. Installed v0.3.3 and its data remain untouched. Do not infer hardware playback from the offline tests.

@@ -1,3 +1,4 @@
+#include "output_stage.h"
 // SPDX-License-Identifier: GPL-3.0-only
 // Copyright (C) 2026 The-Hybrid-Elite-Mafia contributors
 // No warranty; see LICENSE.
@@ -71,7 +72,7 @@ struct AudioEngine::Impl {
  std::wstring lastMessage=L"WASAPI stopped";
  struct Voice {std::unique_ptr<SampleDsp> physics;bool releaseSample=false,inTail=false;unsigned tailRemaining=0;std::unique_ptr<Decoder> decoder; std::array<float,(Chunk+1)*2> data{}; uint64_t base=0,total=0; size_t count=0; double position=0,step=1;float gain=0,envelope=0,releaseStep=1.f/2400,attackStep=1.f/144;int key=-1;bool release=false;};
  std::array<Voice,Voices> voices;
- std::atomic<bool> sustain{false},usingAsio{false};std::array<int,128> lastVelocity{};std::array<bool,128> deferred{};std::atomic<unsigned> deviceFrames{0};std::atomic<uint64_t> decodedBytes{0};std::atomic<float> peakL{0},peakR{0};std::array<std::atomic<float>,8> physics{{.5f,40,0,.25f,1.5f,.2f,.5f,0}};std::atomic<bool> physicsOn{true};
+ std::atomic<bool> sustain{false},usingAsio{false};std::array<int,128> lastVelocity{};std::array<bool,128> deferred{};std::atomic<unsigned> deviceFrames{0};std::atomic<uint64_t> decodedBytes{0};std::atomic<float> peakL{0},peakR{0},outputDb{0};OutputStage outputStage;std::atomic<uint64_t> limitedFrames{0};std::array<std::atomic<float>,8> physics{{.5f,40,0,.25f,1.5f,.2f,.5f,0}};std::atomic<bool> physicsOn{true};
  DspParameters parameters(){DspParameters p{resonance.load(),tension.load(),strike.load(),friction.load()};p.hardness=physics[0];p.strikeWindowMs=physics[1];p.detuneCents=physics[2];p.stiffness=physics[3];p.decaySeconds=physics[4];p.sympathetic=physics[5];p.releaseNoise=physics[6];p.blend=physics[7];p.physicsOn=physicsOn;p.legacyMode=legacyMode;return p;}
  void message(const std::wstring& s){std::lock_guard lock(messageMutex);lastMessage=s;}
  static void CALLBACK midiCallback(HMIDIIN,UINT msg,DWORD_PTR self,DWORD_PTR packed,DWORD_PTR) {
@@ -123,8 +124,8 @@ struct AudioEngine::Impl {
    }
   }
   if(legacyMode){dsp.setParameters({resonance.load(),tension.load(),strike.load(),friction.load()});dsp.process(target,count);}
-  float l=0,r=0;for(unsigned k=0;k<count;++k){l=std::max(l,std::abs(target[k*2]));r=std::max(r,std::abs(target[k*2+1]));}peakL=l;peakR=r;
-  active.store(live);for(unsigned i=0;i<count*2;++i)target[i]=std::clamp(target[i],-1.f,1.f);
+  outputStage.process(target,count,outputDb.load(),rate.load());peakL=outputStage.left;peakR=outputStage.right;limitedFrames=outputStage.limitedFrames;
+  active.store(live);
  }
  void workerLoop(){CoInitializeEx(nullptr,COINIT_MULTITHREADED);dsp.reset(float(rate.load()));unsigned seenGeneration=0;std::array<float,256*2> block{};
   while(running.load()){
@@ -179,20 +180,21 @@ struct AudioEngine::Impl {
   running.store(false);clean();
  }
 };
-bool AudioEngine::renderOffline(const std::vector<Sample>& samples,const std::wstring& provenance,bool confirmed,const std::vector<OfflineNote>& events,uint32_t rate,uint32_t frames,OfflineRender& result,std::wstring& error,const DspParameters& parameters){
+bool AudioEngine::renderOffline(const std::vector<Sample>& samples,const std::wstring& provenance,bool confirmed,const std::vector<OfflineNote>& events,uint32_t rate,uint32_t frames,OfflineRender& result,std::wstring& error,const DspParameters& parameters,float outputDb){
  if(rate<8000||rate>384000||!frames||frames>4000000||events.size()>65536){error=L"Offline diagnostic exceeds rate, frame or event bounds.";return false;}
  uint32_t previous=0;for(const auto& event:events){if(event.frame<previous||event.frame>=frames||event.key<0||event.key>127||event.velocity<0||event.velocity>127){error=L"Offline events must be ordered and within frame/key/velocity bounds.";return false;}previous=event.frame;}
  AudioEngine engine;if(!engine.setSamples(samples,error,provenance,confirmed))return false;
- auto& state=*engine.impl;state.rate=rate;state.dsp.reset(float(rate));engine.setDspParameters(parameters);OfflineRender rendered;rendered.stereo.resize(size_t(frames)*2);rendered.selections.reserve(events.size());size_t next=0;
+ auto& state=*engine.impl;state.rate=rate;state.dsp.reset(float(rate));engine.setDspParameters(parameters);engine.setOutputDb(outputDb);OfflineRender rendered;rendered.stereo.resize(size_t(frames)*2);rendered.selections.reserve(events.size());size_t next=0;
  for(uint32_t frame=0;frame<frames;){
   while(next<events.size()&&events[next].frame==frame){const auto& event=events[next++];int selected=state.applyNote(event.key,event.velocity);if(event.velocity)rendered.selections.push_back({frame,event.key,event.velocity,selected});unsigned live=0;for(auto& voice:state.voices)if(voice.decoder)++live;rendered.peakVoices=std::max(rendered.peakVoices,live);}
   uint32_t count=std::min<uint32_t>(256,frames-frame);if(next<events.size())count=std::min(count,events[next].frame-frame);
   state.render(rendered.stereo.data()+size_t(frame)*2,count);frame+=count;
  }
- rendered.voiceSteals=state.steals.load();rendered.decodeErrors=state.failures.load();
+ rendered.limitedFrames=state.limitedFrames;rendered.outputLeft=state.peakL;rendered.outputRight=state.peakR;rendered.voiceSteals=state.steals.load();rendered.decodeErrors=state.failures.load();
  if(rendered.decodeErrors){error=L"Offline rendering encountered decoder errors.";return false;}
  result=std::move(rendered);return true;
 }
+void AudioEngine::setOutputDb(float db) noexcept{impl->outputDb=std::isfinite(db)?std::clamp(db,-24.f,12.f):0;}
 AudioEngine::AudioEngine():impl(std::make_unique<Impl>()){}
 AudioEngine::~AudioEngine(){stop();}
 bool AudioEngine::enumerateAsioDevices(std::vector<AsioDevice>& devices,std::wstring& error){return AsioBackend::enumerate(devices,error);}
@@ -253,4 +255,4 @@ bool AudioEngine::inspectOutput(const std::wstring& id,WasapiMode mode,std::wstr
 
 
 
-namespace whic {AudioTelemetry AudioEngine::telemetry()const noexcept{AudioTelemetry t;t.running=impl->running;t.asio=impl->usingAsio;t.rate=t.running?impl->rate.load():0;t.bufferFrames=t.running?impl->deviceFrames.load():0;t.voices=impl->active;t.underruns=impl->underruns;t.decodedBytes=impl->decodedBytes;t.left=t.running?impl->peakL.load():0;t.right=t.running?impl->peakR.load():0;for(unsigned i=0;i<128;++i)t.keys[i]=(impl->notes[i].load()&127)!=0;return t;}void AudioEngine::setSustain(bool enabled)noexcept{impl->sustain=enabled;}}
+namespace whic {AudioTelemetry AudioEngine::telemetry()const noexcept{AudioTelemetry t;t.running=impl->running;t.asio=impl->usingAsio;t.rate=t.running?impl->rate.load():0;t.bufferFrames=t.running?impl->deviceFrames.load():0;t.voices=impl->active;t.underruns=impl->underruns;t.decodedBytes=impl->decodedBytes;t.limitedFrames=impl->limitedFrames;t.left=t.running?impl->peakL.load():0;t.right=t.running?impl->peakR.load():0;for(unsigned i=0;i<128;++i)t.keys[i]=(impl->notes[i].load()&127)!=0;return t;}void AudioEngine::setSustain(bool enabled)noexcept{impl->sustain=enabled;}}

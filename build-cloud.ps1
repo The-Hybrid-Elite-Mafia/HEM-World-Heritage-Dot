@@ -40,7 +40,7 @@ int main(){std::expected<int,int> value=23;std::cout<<"MSC="<<_MSC_VER<<" MSVC_L
   $libs=@('mfplat.lib','mfreadwrite.lib','mfuuid.lib','ole32.lib','propsys.lib','uuid.lib','winmm.lib','shell32.lib','ksuser.lib','advapi32.lib','user32.lib','gdi32.lib','d2d1.lib','dwrite.lib','windowscodecs.lib')
   & rc /nologo /fo "$out/obj/version.res" version.rc
   if($LASTEXITCODE){throw 'Resource build failed'}
-  $targets=@('workstation','workstation_tests','knob_tests','portable_pack_tests','audio_preferences_test','nonblocking_metadata_test','ui_model_tests','offscreen_render')
+  $targets=@('workstation','workstation_tests','knob_tests','portable_pack_tests','audio_preferences_test','nonblocking_metadata_test','ui_model_tests','repair_ui_tests','output_tests','level_tests','offscreen_render')
   foreach($target in $targets){
     $dest=if($target -eq 'workstation'){"$out/delivery/WorldHeritageWorkstation.exe"}else{"$out/$target.exe"}
     $subsystem=if($target -eq 'workstation'){'/SUBSYSTEM:WINDOWS'}else{'/SUBSYSTEM:CONSOLE'}
@@ -54,9 +54,14 @@ int main(){std::expected<int,int> value=23;std::cout<<"MSC="<<_MSC_VER<<" MSVC_L
   Run-Check audio_preferences_test @("$out/tests/preferences.conf")
   Run-Check nonblocking_metadata_test @($fixture)
   Run-Check ui_model_tests @($fixture)
+  Run-Check repair_ui_tests @()
+  Run-Check output_tests @()
+  Run-Check level_tests @($fixture)
   & "$out/offscreen_render.exe" "$out/delivery/production-1366x768.png" 1366 768 "$out/tests/roundtrip.whic" | Tee-Object "$out/logs/offscreen.txt"
   if($LASTEXITCODE){throw 'Production offscreen render failed'}
-  Copy-Item LICENSE,THIRD_PARTY_NOTICES.md,README.md "$out/delivery/"
+  & "$out/offscreen_render.exe" "$out/delivery/zone-editor-1366x768.png" 1366 768 "$out/tests/roundtrip.whic" zone
+  if($LASTEXITCODE){throw 'Editor production render failed'}
+  Copy-Item LICENSE,THIRD_PARTY_NOTICES.md,README.md,REPAIRS-0.4.1.md "$out/delivery/"
   & git archive --format=zip "--output=$out/delivery/source.zip" HEAD
   if($LASTEXITCODE){throw 'Source archive failed'}
   Get-ChildItem "$out/delivery" -File | Get-FileHash -Algorithm SHA256 | Select-Object Hash,@{Name='File';Expression={Split-Path $_.Path -Leaf}} | ConvertTo-Json | Set-Content "$out/delivery/SHA256.json"

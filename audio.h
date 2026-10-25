@@ -21,13 +21,13 @@ constexpr bool boundedBuffer(uint32_t frames) noexcept {return frames>0&&frames<
 }
 struct OfflineNote { uint32_t frame=0; int key=60,velocity=0; };
 struct OfflineSelection { uint32_t frame=0; int key=0,velocity=0,sampleIndex=-1; };
-struct OfflineRender { std::vector<float> stereo; std::vector<OfflineSelection> selections; unsigned peakVoices=0; uint64_t voiceSteals=0,decodeErrors=0; };
-struct AudioTelemetry {bool running=false,asio=false;unsigned rate=0,bufferFrames=0,voices=0;uint64_t underruns=0,decodedBytes=0;float left=0,right=0;std::array<bool,128> keys{};};
+struct OfflineRender { std::vector<float> stereo; std::vector<OfflineSelection> selections; unsigned peakVoices=0; uint64_t voiceSteals=0,decodeErrors=0,limitedFrames=0; float outputLeft=0,outputRight=0; };
+struct AudioTelemetry {bool running=false,asio=false;unsigned rate=0,bufferFrames=0,voices=0;uint64_t underruns=0,decodedBytes=0,limitedFrames=0;float left=0,right=0;std::array<bool,128> keys{};};
 class AudioEngine {
 public:
  AudioEngine(); ~AudioEngine();
  // Diagnostic/offline path: same selector and renderer; never creates an audio device.
- static bool renderOffline(const std::vector<Sample>&,const std::wstring& provenance,bool acousticSourceConfirmed,const std::vector<OfflineNote>&,uint32_t rate,uint32_t frames,OfflineRender&,std::wstring& error,const DspParameters& dsp = {});
+ static bool renderOffline(const std::vector<Sample>&,const std::wstring& provenance,bool acousticSourceConfirmed,const std::vector<OfflineNote>&,uint32_t rate,uint32_t frames,OfflineRender&,std::wstring& error,const DspParameters& dsp = {},float outputDb=0);
  static bool enumerateAsioDevices(std::vector<AsioDevice>& devices,std::wstring& error);
  bool startAsio(const std::wstring& driverId,uint32_t requestedFrames,void* nativeWindow,std::wstring& error);
  bool start(std::wstring& error); // Default endpoint, WASAPI shared mode.
@@ -36,6 +36,7 @@ public:
  static bool enumerateOutputDevices(std::vector<OutputDevice>&,std::wstring& error);
  static bool inspectOutput(const std::wstring& endpointId,WasapiMode,std::wstring& report,std::wstring& error);
  AudioTelemetry telemetry() const noexcept; void setSustain(bool) noexcept;
+ void setOutputDb(float) noexcept;
  void stop(); void setDspParameters(const DspParameters&) noexcept;
  bool setSamples(const std::vector<Sample>& samples,std::wstring& error,const std::wstring& provenance,bool acousticSourceConfirmed);
  void noteOn(int key,int velocity); void noteOff(int key); void panic();
